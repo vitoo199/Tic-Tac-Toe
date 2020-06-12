@@ -1,9 +1,10 @@
 import random
+import copy
 
 
 class Cell():
-    def __init__(self, id, val='', clickable=False):
-        self.id = id
+    def __init__(self, _id, val='', clickable=False):
+        self.id = _id
         self.val = val
         self.clickable = clickable
 
@@ -37,7 +38,7 @@ def to_1d_index(i, j):
         return row
 
 
-def empty_cells(board):
+def get_empty_cells(board):
     return [cell for cell in board if cell.clickable]
 
 
@@ -57,7 +58,7 @@ winning_combs = [
 
     [0, 3, 6],
     [1, 4, 7],
-    [2, 5, 6],
+    [2, 5, 8],
 
     [0, 4, 8],
     [2, 4, 6],
@@ -68,16 +69,9 @@ winning_combs = [
 
 def check_game_end(board):
     for comb in winning_combs:
-        tmp = []
-        for index in comb:
-            if board[index].val != BOARD_DEFAULT_CHAR:
-                tmp.append(board[index].val)
-        if len(tmp) < 3:
-            continue
-        first = tmp[0]
-
-        if len(list(filter(lambda e: e != first, tmp))) == 0:
-            return first
+        for index in range(len(comb) - 2):
+            if board[comb[index]].val != BOARD_DEFAULT_CHAR and board[comb[index]].val == board[comb[index + 1]].val and board[comb[index]].val == board[comb[index + 2]].val:
+                return board[comb[index]].val
     return False
 
 
@@ -88,9 +82,57 @@ def input_pos():
     return (int(row), int(col))
 
 
+def opposite_turn(turn):
+    return PLAYER if turn == AI else AI
+
+
+def is_draw(board):
+    return get_empty_cells(board) == 0 and not check_game_end(board)
+
+
 def deactivate_cell(board, *pos):
     board[to_1d_index(pos[0], pos[1])].clickable = False
     return board
+
+
+def minimax(pos, maximazingPlayer, best_move=None):
+
+    game_end_result = check_game_end(pos)
+    if game_end_result == PLAYER:
+        return [-1, best_move]
+    elif game_end_result == AI:
+        return [1, best_move]
+    if is_draw(pos):
+        return [0, best_move]
+    if maximazingPlayer:
+        maxEval = -9999
+        empty_cells = get_empty_cells(pos)
+        current_best_move = None
+        for empty_cell in empty_cells:
+            pos[empty_cell.id].val = PLAYER
+            pos[empty_cell.id].clickable = False
+            _eval, move = minimax(
+                copy.deepcopy(pos),  False, empty_cell.id)
+            print(_eval, move)
+            if _eval > maxEval:
+                maxEval = _eval
+                current_best_move = move
+
+        return [maxEval, current_best_move]
+    else:
+        minEval = 9999
+        empty_cells = get_empty_cells(pos)
+        current_best_move = None
+        for empty_cell in empty_cells:
+            pos[empty_cell.id].val = AI
+            pos[empty_cell.id].clickable = False
+            _eval, move = minimax(
+                  copy.deepcopy(pos), True, empty_cell.id)
+            if _eval < minEval:
+                minEval = _eval
+                current_best_move = move
+
+        return [minEval, current_best_move]
 
 
 def mark_board(board, mark, *pos):
@@ -113,7 +155,6 @@ def run():
         Cell(7, BOARD_DEFAULT_CHAR, True),
         Cell(8, BOARD_DEFAULT_CHAR, True),
     ]
-
     is_game_over = False
     print_matrix(board)
 
@@ -127,18 +168,23 @@ def run():
                 break
             else:
                 print('Already taken! Pick another one!')
-        turn = AI
+        if check_game_end(board):
+            print(f'GAME ENDED AFTER USER!')
+            is_game_over = True
+            break
 
-        empty_cell = empty_cells(board)[0]
-        ai_row, ai_col = to_2d_index(empty_cell.id)
-        board = mark_board(board, AI, ai_row, ai_col)
-        board = deactivate_cell(board, ai_row, ai_col)
+        _, i = minimax(copy.deepcopy(board), True)
+        print(_)
+        board[i].val = AI
+        board[i].clickable = False
 
         turn = PLAYER
 
         print_matrix(board)
         if check_game_end(board):
+            print(f'GAME ENDED!')
             is_game_over = True
+            break
 
 
 run()
