@@ -22,7 +22,7 @@ class Board():
         self.get(*pos).val = mark
 
     def get_empty_cells(self):
-        return [cell for cell_row in self.cells for cell in cell_row if cell.clickable]
+        return [cell for cell_row in self.cells for cell in cell_row if cell.clickable or cell.val == consts.BOARD_DEFAULT_CHAR]
 
     def show(self):
         for i in range(consts.ROW):
