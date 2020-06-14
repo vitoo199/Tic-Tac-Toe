@@ -10,4 +10,7 @@ matrix = [
 ]
 b = Board(matrix=matrix)
 g = Game(board=b, human=Human(b), computer=Computer(b))
-g.run()
+
+
+if __name__ == '__main__':
+    g.run()
